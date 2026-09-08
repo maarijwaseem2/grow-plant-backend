@@ -8,16 +8,27 @@ import * as multer from 'multer';
 import * as bodyParser from 'body-parser';
 import { join } from 'path';
 import * as express from 'express';
-global.fetch = require('node-fetch');
+// Node 18+ (this project runs on Node 22) provides a native global fetch,
+// so the previous `global.fetch = require('node-fetch')` line was both
+// unnecessary and crashed on boot because node-fetch was never installed.
 async function bootstrap() {
   dotenv.config();
 
   const app = await NestFactory.create(AppModule);
 
+  const frontendOrigins = (
+    process.env.FRONTEND_URL ||
+    'http://localhost:5173,http://localhost:5174'
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
   app.enableCors({
-    origin: 'http://localhost:5173', // Allow requests from your React app
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE', // Allowed methods
-    credentials: true, // Allow credentials if needed
+    origin: frontendOrigins,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Authorization, Accept',
+    credentials: true,
   });
   app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
   await app.init();
@@ -36,6 +47,8 @@ async function bootstrap() {
   );
   // app.useGlobalGuards(new JwtAuthGuard());
 
-  await app.listen(3000);
+  const port = Number(process.env.PORT) || 3001;
+  await app.listen(port);
+  console.log(`Backend running on http://localhost:${port}`);
 }
 bootstrap();

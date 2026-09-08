@@ -21,9 +21,14 @@ export class UserController {
   // User Signup
   @Post()
   async signup(@Body() createUserDto: CreateUserDto) {
-    const existingAdmin = await this.userService.findOne({ role: UserRole.Admin });
-    if (createUserDto.role === 'Admin' && existingAdmin) {
-        throw new BadRequestException('Admin already exists. Only one admin is allowed.');
+    // Admin accounts must never be creatable through the public signup
+    // endpoint. Previously the first person to POST role=Admin simply became
+    // the admin, so any visitor could claim the admin seat. The admin is now
+    // seeded directly in the database (or by an existing admin) instead.
+    if (createUserDto.role === UserRole.Admin) {
+      throw new BadRequestException(
+        'Admin accounts cannot be self-registered.',
+      );
     }
     return await this.userService.signup(createUserDto);
   }
