@@ -23,6 +23,9 @@ export class Complain {
   @Column({ nullable: true })
   image: string;
 
+  @Column({ type: 'text', nullable: true })
+  complaintDetails: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

@@ -53,10 +53,27 @@ export class BuyPlantService {
     }
   }
   // // Get all plants
-  async findAll(): Promise<{ message: string; data: BuyPlant[] }> {
+  async findAll(page?: string, limit?: string): Promise<any> {
     try {
-      const plants = await this.plantRepository.find();
-      return this.formatResponse('Plants retrieved successfully', plants);
+      const wantsPage = page !== undefined || limit !== undefined;
+      // hard cap protects the API from a request pulling the whole table
+      const take = Math.min(Number(limit) || (wantsPage ? 12 : 200), 200);
+      const currentPage = Math.max(Number(page) || 1, 1);
+      const skip = (currentPage - 1) * take;
+      const [plants, total] = await this.plantRepository.findAndCount({
+        take,
+        skip,
+        order: { id: 'ASC' },
+      });
+      return {
+        ...this.formatResponse('Plants retrieved successfully', plants),
+        pagination: {
+          total,
+          page: currentPage,
+          limit: take,
+          totalPages: Math.ceil(total / take),
+        },
+      };
     } catch (error) {
       throw new InternalServerErrorException('Failed to fetch plants');
     }

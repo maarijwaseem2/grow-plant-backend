@@ -1,27 +1,29 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
-import Stripe from 'stripe';
 import * as QRCode from 'qrcode';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Payment } from './entities/payment.entity';
 import { Repository } from 'typeorm';
+import { User } from '../users/entities/user.entity';
+import { UserRole } from '../users/userRole.enum';
+import { Notification } from '../notification/entities/notification.entity';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class PaymentsService {
-  private stripe: Stripe;
   private transporter: any;
 
   constructor(
     private configService: ConfigService,
     @InjectRepository(Payment) private paymentRepository: Repository<Payment>,
+    @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Notification)
+    private notificationRepository: Repository<Notification>,
+    private readonly realtime: RealtimeGateway,
   ) {
-    this.stripe = new Stripe(this.configService.get('STRIPE_SECRET_KEY'), {
-      apiVersion: '2024-09-30.acacia',
-    });
-
     // Initialize email transporter
     this.transporter = nodemailer.createTransport({
       service: 'gmail',
@@ -47,9 +49,6 @@ export class PaymentsService {
     let result: any;
 
     switch (paymentMethod) {
-      case 'stripe':
-        result = await this.processStripePayment(amount, cardToken);
-        break;
       case 'jazzcash':
         result = await this.processJazzCashPayment(amount, phone);
         break;
@@ -140,20 +139,6 @@ export class PaymentsService {
     }
   }
 
-  async processStripePayment(amount: number, cardToken: string) {
-    try {
-      // Convert amount to cents (Stripe expects the smallest unit)
-      const charge = await this.stripe.charges.create({
-        amount: Math.round(amount * 100), // Convert dollars to cents
-        currency: 'usd',
-        source: cardToken,
-      });
-      return { status: 'success', message: 'Stripe payment processed', charge };
-    } catch (error) {
-      return { status: 'failure', message: 'Stripe payment failed', error };
-    }
-  }
-
   // JazzCash payment
   async processJazzCashPayment(amount: number, phone: string) {
     try {
@@ -213,7 +198,71 @@ export class PaymentsService {
   }
 
   async findAll() {
-    return await this.paymentRepository.find();
+    return await this.paymentRepository.find({ order: { createdAt: 'DESC' } });
+  }
+
+  // ---- Manual payment approval flow ----
+  async submitManualPayment(dto: any) {
+    const payment = this.paymentRepository.create({
+      amount: dto.amount,
+      method: dto.method,
+      reference: dto.reference,
+      phone: dto.phone,
+      userId: dto.userId,
+      status: 'Pending',
+    });
+    const saved = await this.paymentRepository.save(payment);
+    const admins = await this.userRepository.find({ where: { role: UserRole.Admin } });
+    for (const admin of admins) {
+      await this.notificationRepository.save({
+        userId: admin.id,
+        message: `New payment of Rs ${dto.amount} via ${dto.method} is awaiting approval.`,
+        read: false,
+      });
+      this.realtime.notifyUser(admin.id, 'notification', {
+        message: 'New payment awaiting approval',
+      });
+    }
+    return { message: 'Payment submitted for approval', data: saved };
+  }
+
+  async approvePayment(id: string) {
+    const p = await this.paymentRepository.findOne({ where: { id } });
+    if (!p) throw new NotFoundException('Payment not found');
+    p.status = 'Approved';
+    await this.paymentRepository.save(p);
+    if (p.userId) {
+      await this.notificationRepository.save({
+        userId: p.userId,
+        message: `Your payment of Rs ${p.amount} has been approved. Thank you!`,
+        read: false,
+      });
+      this.realtime.notifyUser(p.userId, 'notification', { message: 'Payment approved' });
+    }
+    return { message: 'Payment approved', data: p };
+  }
+
+  async rejectPayment(id: string) {
+    const p = await this.paymentRepository.findOne({ where: { id } });
+    if (!p) throw new NotFoundException('Payment not found');
+    p.status = 'Rejected';
+    await this.paymentRepository.save(p);
+    if (p.userId) {
+      await this.notificationRepository.save({
+        userId: p.userId,
+        message: `Your payment of Rs ${p.amount} was rejected. Please contact support.`,
+        read: false,
+      });
+      this.realtime.notifyUser(p.userId, 'notification', { message: 'Payment rejected' });
+    }
+    return { message: 'Payment rejected', data: p };
+  }
+
+  async getMyPayments(userId: string) {
+    return this.paymentRepository.find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async findOne(id: string) {

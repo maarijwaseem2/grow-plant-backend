@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateComplainDto {
   @IsString()
@@ -21,7 +21,10 @@ export class CreateComplainDto {
   @IsNotEmpty()
   address: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
+  complaintDetails?: string;
+
+  @IsOptional()
   image?: string | File;
 }

@@ -94,6 +94,12 @@ export class ServicesController {
     return this.servicesService.findAll();
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('mine')
+  getMine(@Request() req) {
+    return this.servicesService.getMyServices(req.user.id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.servicesService.findOne(id);

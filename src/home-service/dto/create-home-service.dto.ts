@@ -22,7 +22,7 @@ class PlantOrder {
 
 export class CreateHomeServiceDto {
   @IsString()
-  @IsPositive()
+  @IsNotEmpty()
   userId: string;
 
   @IsArray()

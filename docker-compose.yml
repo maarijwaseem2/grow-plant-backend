@@ -1,0 +1,85 @@
+# Go Green — full stack.  Run:  docker compose up --build
+#
+# Expected layout (put the two unzipped folders side by side and rename):
+#   go-green/
+#     backend/        <- this folder (has docker-compose.yml, Dockerfile, ai-service/)
+#     frontend/       <- the frontend folder
+# If your frontend folder has a different name, edit the `frontend.build` path below.
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gogreen
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gogreen"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  ai-engine:
+    build: ./ai-service
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  backend:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      ai-engine:
+        condition: service_started
+    environment:
+      JWT_KEY: change-me-to-a-long-random-string
+      JWT_EXPIRES: 1d
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: gogreen
+      ADMIN_EMAIL: admin@gogreen.pk
+      ADMIN_PASSWORD: Admin@12345
+      PORT: 3001
+      FRONTEND_URL: http://localhost:5173,http://localhost
+      AI_SERVICE_URL: http://ai-engine:8000
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    ports:
+      - "3001:3001"
+    volumes:
+      - uploads:/app/uploads
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ../frontend          # adjust if your frontend folder has another name
+      args:
+        VITE_API_BASE_URL: http://localhost:3001
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  uploads:

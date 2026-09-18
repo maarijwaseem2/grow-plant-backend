@@ -1,11 +1,6 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
+@Index(['userId'])
 @Entity()
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
@@ -22,6 +17,12 @@ export class Payment {
 
   @Column()
   status: string;
+
+  @Column({ nullable: true })
+  method: string; // easypaisa / jazzcash / bank
+
+  @Column({ nullable: true })
+  reference: string; // transaction ID / proof reference
 
   @Column({ nullable: true })
   userId: string;

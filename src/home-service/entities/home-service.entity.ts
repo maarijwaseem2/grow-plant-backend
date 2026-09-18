@@ -1,7 +1,8 @@
 import { BuyPlant } from 'src/buy-plant/entities/buy-plant.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, Index } from 'typeorm';
 
+@Index(['userId'])
 @Entity()
 export class HomeService {
   @PrimaryGeneratedColumn('uuid')
@@ -27,6 +28,12 @@ export class HomeService {
 
   @Column()
   address: string;
+
+  @Column({ nullable: true })
+  gardenerId: string; // Assigned gardener
+
+  @Column({ default: 'Pending' })
+  status: string; // Pending, Assigned, In Progress, Completed
 
   // @ManyToOne(() => BuyPlant, (plant) => plant.services)
   // plantId: BuyPlant;

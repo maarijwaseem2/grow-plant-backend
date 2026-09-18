@@ -1,5 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
+@Index(['userId'])
 @Entity()
 export class Notification {
   @PrimaryGeneratedColumn('uuid')

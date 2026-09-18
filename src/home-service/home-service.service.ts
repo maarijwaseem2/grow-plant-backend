@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateHomeServiceDto } from './dto/create-home-service.dto';
 import { UpdateHomeServiceDto } from './dto/update-home-service.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,6 +6,8 @@ import { HomeService } from './entities/home-service.entity';
 import { Repository } from 'typeorm';
 import { BuyPlant } from 'src/buy-plant/entities/buy-plant.entity';
 import { User } from 'src/users/entities/user.entity';
+import { Notification } from 'src/notification/entities/notification.entity';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
 export class HomeServiceService {
@@ -15,7 +17,46 @@ export class HomeServiceService {
     @InjectRepository(BuyPlant)
     private buyplantRepository: Repository<BuyPlant>,
     @InjectRepository(User) private userRepository: Repository<User>,
+    @InjectRepository(Notification)
+    private notificationRepository: Repository<Notification>,
+    private readonly realtime: RealtimeGateway,
   ) {}
+
+  async getMyHomeServices(userId: string) {
+    return this.serviceRepository.find({ where: { userId } });
+  }
+
+  // ---- Gardener workflow (home services) ----
+  async assignGardener(id: string, gardenerId: string) {
+    const hs = await this.serviceRepository.findOne({ where: { id } });
+    if (!hs) throw new NotFoundException('Home service not found');
+    if (hs.gardenerId === gardenerId) return hs; // already assigned -> no duplicate notification
+    hs.gardenerId = gardenerId;
+    hs.status = 'Assigned';
+    await this.serviceRepository.save(hs);
+    await this.notificationRepository.save({
+      userId: gardenerId,
+      message: `You have been assigned a new home service at ${hs.location}`,
+      read: false,
+    });
+    this.realtime.notifyUser(gardenerId, 'notification', {
+      message: `New home service at ${hs.location}`,
+    });
+    return { message: 'Gardener assigned and notified', data: hs };
+  }
+
+  async getGardenerTasks(gardenerId: string) {
+    return this.serviceRepository.find({ where: { gardenerId } });
+  }
+
+  async updateTaskStatus(id: string, gardenerId: string, status: string) {
+    const hs = await this.serviceRepository.findOne({ where: { id, gardenerId } });
+    if (!hs) throw new NotFoundException('Task not found');
+    hs.status = status;
+    await this.serviceRepository.save(hs);
+    this.realtime.notifyUser(hs.userId, 'task-updated', { id: hs.id, status });
+    return { message: 'Task status updated', data: hs };
+  }
   // async create(createHomeServiceDto: CreateHomeServiceDto) {
   //   const { plants, userId, total, location, address } = createHomeServiceDto;
   //   const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -76,11 +117,11 @@ export class HomeServiceService {
   }
 
   findAll() {
-    return `This action returns all homeService`;
+    return this.serviceRepository.find();
   }
 
   findOne(id: string) {
-    return `This action returns a #${id} homeService`;
+    return this.serviceRepository.findOne({ where: { id } });
   }
 
   update(id: string, updateHomeServiceDto: UpdateHomeServiceDto) {

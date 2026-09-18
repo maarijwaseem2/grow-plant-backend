@@ -1,0 +1,795 @@
+{
+  "info": {
+    "name": "Go Green \u2014 API",
+    "description": "Full API collection for the Go Green platform (NestJS backend + FastAPI AI service).\n\nSet {{base_url}} (default http://localhost:3001). Log in first, then copy the returned token into {{token}} / {{admin_token}} / {{gardener_token}}.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3001"
+    },
+    {
+      "key": "ai_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "gardener_token",
+      "value": ""
+    },
+    {
+      "key": "id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth"
+              ]
+            },
+            "description": "Returns { data: { id, username, email, role, token } }. Copy token into a variable.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@gogreen.pk\",\n  \"password\": \"Admin@12345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Admin dashboard (Admin only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "dashboard"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "Sign up (Customer/Gardener)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"Ali Khan\",\n  \"email\": \"ali@test.com\",\n  \"mobile\": \"03001234567\",\n  \"province\": \"Sindh\",\n  \"city\": \"Karachi\",\n  \"password\": \"pass123\",\n  \"rePassword\": \"pass123\",\n  \"role\": \"Customer\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Get all users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/user",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "user"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plants",
+      "item": [
+        {
+          "name": "Get all plants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/plants",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "plants"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get plant by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/plants/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "plants",
+                "{{id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create plant (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/plants",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "plants"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Neem",
+                  "type": "text"
+                },
+                {
+                  "key": "price",
+                  "value": "500",
+                  "type": "text"
+                },
+                {
+                  "key": "quantity",
+                  "value": "20",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "A hardy neem sapling",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "Outdoor Plants",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reserve stock",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/plants/{{id}}/reserve",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "plants",
+                "{{id}}",
+                "reserve"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Release stock",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/plants/{{id}}/release",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "plants",
+                "{{id}}",
+                "release"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Purchase (decrement stock)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/plants/{{id}}/purchase",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "plants",
+                "{{id}}",
+                "purchase"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Get all orders",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/order",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "order"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Place order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/order",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{id}}\",\n  \"plants\": [\n    {\n      \"plantId\": \"{{id}}\",\n      \"quantity\": 2,\n      \"name\": \"Neem\"\n    }\n  ],\n  \"total\": 1200,\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Khan\",\n  \"email\": \"ali@test.com\",\n  \"phone\": \"03001234567\",\n  \"address\": \"Gulshan, Karachi\",\n  \"postcode\": \"75300\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Donations",
+      "item": [
+        {
+          "name": "Donate",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/donation",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "donation"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{id}}\",\n  \"quantity\": 10,\n  \"total\": 1000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Complaints",
+      "item": [
+        {
+          "name": "Submit complaint (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/complain",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "complain"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "userId",
+                  "value": "{{id}}",
+                  "type": "text"
+                },
+                {
+                  "key": "fullname",
+                  "value": "Ali Khan",
+                  "type": "text"
+                },
+                {
+                  "key": "phoneNumber",
+                  "value": "03001234567",
+                  "type": "text"
+                },
+                {
+                  "key": "cnic",
+                  "value": "4210112345671",
+                  "type": "text"
+                },
+                {
+                  "key": "address",
+                  "value": "Gulshan, Karachi",
+                  "type": "text"
+                },
+                {
+                  "key": "complaintDetails",
+                  "value": "Damaged plants in the park",
+                  "type": "text"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get all complaints",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/complain",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "complain"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Home Services",
+      "item": [
+        {
+          "name": "Request home service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/home-service",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "home-service"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"{{id}}\",\n  \"plants\": [\n    {\n      \"plantId\": \"{{id}}\",\n      \"quantity\": 2,\n      \"name\": \"Neem\"\n    }\n  ],\n  \"total\": 1400,\n  \"location\": \"Gulshan\",\n  \"address\": \"Block 5, Gulshan, Karachi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Services & Gardener",
+      "item": [
+        {
+          "name": "Get all services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/services",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "services"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get service by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/services/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "services",
+                "{{id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Assign gardener (Admin only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/services/assign-gardener/{{id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "services",
+                "assign-gardener",
+                "{{id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gardenerId\": \"{{id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "My tasks (Gardener only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gardener_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/services/gardener/tasks",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "services",
+                "gardener",
+                "tasks"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update task status (Gardener only)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{gardener_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/services/gardener/tasks/{{id}}/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "services",
+                "gardener",
+                "tasks",
+                "{{id}}",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"In Progress\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI (spot finder + verify)",
+      "item": [
+        {
+          "name": "Suggest public spots (via gateway)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ai/suggest-spots?lat=24.8607&lng=67.0011&radius=5000&limit=30",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ai",
+                "suggest-spots"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "24.8607"
+                },
+                {
+                  "key": "lng",
+                  "value": "67.0011"
+                },
+                {
+                  "key": "radius",
+                  "value": "5000"
+                },
+                {
+                  "key": "limit",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Returns GeoJSON of suggested PUBLIC plantable spots and caches them to PostGIS."
+          }
+        },
+        {
+          "name": "Verify plant photo (via gateway)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ai/verify-plant",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ai",
+                "verify-plant"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Plantation Spots (PostGIS)",
+      "item": [
+        {
+          "name": "Nearby spots (ST_DWithin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/plantation-spots/nearby?lat=24.8607&lng=67.0011&radius=5000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "plantation-spots",
+                "nearby"
+              ],
+              "query": [
+                {
+                  "key": "lat",
+                  "value": "24.8607"
+                },
+                {
+                  "key": "lng",
+                  "value": "67.0011"
+                },
+                {
+                  "key": "radius",
+                  "value": "5000"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/plantation-spots/count",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "plantation-spots",
+                "count"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -14,6 +14,8 @@ import { HomeServiceService } from './home-service.service';
 import { CreateHomeServiceDto } from './dto/create-home-service.dto';
 import { UpdateHomeServiceDto } from './dto/update-home-service.dto';
 import { JwtAuthGuard } from 'src/shared/guards/jwt.guard';
+import { AdminGuard } from 'src/shared/guards/admin.guard';
+import { GardenerGuard } from 'src/shared/guards/gardener.guard';
 import { Request as ExpressRequest } from 'express';
 
 interface User {
@@ -46,6 +48,11 @@ export class HomeServiceController {
     return this.homeServiceService.findAll();
   }
 
+  @Get('mine')
+  getMine(@Request() req) {
+    return this.homeServiceService.getMyHomeServices(req.user.id);
+  }
+
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.homeServiceService.findOne(id);
@@ -62,5 +69,31 @@ export class HomeServiceController {
   @Delete(':id')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.homeServiceService.remove(id);
+  }
+
+  // ---- Gardener workflow ----
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch('assign-gardener/:id')
+  assignGardener(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('gardenerId') gardenerId: string,
+  ) {
+    return this.homeServiceService.assignGardener(id, gardenerId);
+  }
+
+  @UseGuards(JwtAuthGuard, GardenerGuard)
+  @Get('gardener/tasks')
+  gardenerTasks(@Request() req) {
+    return this.homeServiceService.getGardenerTasks(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, GardenerGuard)
+  @Patch('gardener/tasks/:id/status')
+  updateStatus(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('status') status: string,
+    @Request() req,
+  ) {
+    return this.homeServiceService.updateTaskStatus(id, req.user.id, status);
   }
 }

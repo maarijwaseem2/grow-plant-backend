@@ -23,7 +23,7 @@ class PlantOrder {
 }
 export class CreateOrderDto {
   @IsString()
-  @IsPositive()
+  @IsNotEmpty()
   userId: string;
 
   @IsArray()

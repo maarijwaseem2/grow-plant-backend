@@ -1,24 +1,12 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  Delete,
-  Get,
-  InternalServerErrorException,
-  NotFoundException,
-  Param,
-  ParseUUIDPipe,
-  Patch,
-  Post,
-  UploadedFile,
-  UseInterceptors,
-} from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, InternalServerErrorException, NotFoundException, Param, ParseUUIDPipe, Patch, Post, UploadedFile, UseInterceptors, UseGuards, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { multerOptions } from './middleware/file-upload.middleware';
 import { BuyPlantService } from './buy-plant.service';
 import { CreateBuyPlantDto } from './dto/create-buy-plant.dto';
 import { UpdateBuyPlantDto } from './dto/update-buy-plant.dto';
 import { diskStorage } from 'multer';
+import { JwtAuthGuard } from '../shared/guards/jwt.guard';
+import { AdminGuard } from '../shared/guards/admin.guard';
 
 const imageFileFilter = (req, file, callback) => {
   if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
@@ -41,6 +29,7 @@ const editFileName = (req, file, callback) => {
 @Controller('plants')
 export class BuyPlantController {
   constructor(private readonly buyPlantService: BuyPlantService) {}
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Post()
   @UseInterceptors(
     FileInterceptor('image', {
@@ -91,8 +80,8 @@ export class BuyPlantController {
 
   // // // Fetch all plants
   @Get()
-  async findAll() {
-    return await this.buyPlantService.findAll();
+  async findAll(@Query('page') page?: string, @Query('limit') limit?: string) {
+    return await this.buyPlantService.findAll(page, limit);
   }
 
   // Fetch a specific plant by ID
@@ -102,6 +91,7 @@ export class BuyPlantController {
   }
 
   // Update a specific plant's data by ID
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id')
   @UseInterceptors(FileInterceptor('image', multerOptions))
   async update(
@@ -113,6 +103,7 @@ export class BuyPlantController {
   }
 
   // Delete a plant entry by ID
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Delete(':id')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
     return await this.buyPlantService.remove(id);

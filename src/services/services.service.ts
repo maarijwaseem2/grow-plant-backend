@@ -10,6 +10,8 @@ import { Repository } from 'typeorm';
 import { Service } from './entities/service.entity';
 import { BuyPlant } from 'src/buy-plant/entities/buy-plant.entity';
 import { Notification } from '../notification/entities/notification.entity';
+import { RealtimeGateway } from '../realtime/realtime.gateway';
+import { QueueService } from '../queue/queue.service';
 
 @Injectable()
 export class ServicesService {
@@ -20,6 +22,8 @@ export class ServicesService {
     private buyplantRepository: Repository<BuyPlant>,
     @InjectRepository(Notification)
     private notificationRepository: Repository<Notification>,
+    private readonly realtime: RealtimeGateway,
+    private readonly queue: QueueService,
   ) {}
 
   private formatResponse(message: string, data: any) {
@@ -30,9 +34,6 @@ export class ServicesService {
     createServiceDto: CreateServiceDto,
     file?: Express.Multer.File,
   ): Promise<{ message: string; data: Service[] }> {
-    if (!file) {
-      throw new InternalServerErrorException('No file uploaded');
-    }
 
     try {
       // Parse plants array if it's a string (happens with FormData)
@@ -87,7 +88,7 @@ export class ServicesService {
           subscriptionMonths: isSubscriptionBool
             ? Number(subscriptionMonths)
             : undefined,
-          image: `/uploads/${file.filename}`,
+          image: file ? `/uploads/${file.filename}` : (typeof createServiceDto.image === 'string' ? createServiceDto.image : ''),
           status: 'Pending', // Default status
         });
 
@@ -104,6 +105,11 @@ export class ServicesService {
 
   async findAll() {
     return await this.serviceRepository.find();
+  }
+
+  async getMyServices(userId: string) {
+    const rows = await this.serviceRepository.find({ where: { userId } });
+    return this.formatResponse('My services', rows);
   }
 
   async findOne(id: string) {
@@ -132,16 +138,22 @@ export class ServicesService {
     });
     if (!service) throw new NotFoundException('Service not found');
 
+    // Already assigned to this same gardener -> don't re-notify (prevents duplicate notifications)
+    if (service.gardenerId === gardenerId) {
+      return this.formatResponse('Gardener already assigned', service);
+    }
+
     service.gardenerId = gardenerId;
     service.status = 'Assigned';
     await this.serviceRepository.save(service);
 
     // Notify gardener about new task
-    await this.notificationRepository.save({
-      userId: gardenerId,
-      message: `You have been assigned a new planting task at ${service.locationName}`,
-      read: false,
-    });
+    const note = `You have been assigned a new planting task at ${service.locationName}`;
+    await this.notificationRepository.save({ userId: gardenerId, message: note, read: false });
+    // realtime push to the gardener
+    this.realtime.notifyUser(gardenerId, 'notification', { message: note });
+    // background job (async, off the request thread)
+    await this.queue.enqueue('gardener-assigned', { gardenerId, serviceId });
 
     return this.formatResponse('Gardener assigned and notified', service);
   }
@@ -161,7 +173,8 @@ export class ServicesService {
     service.status = status;
     await this.serviceRepository.save(service);
 
-    // Optional: Notify admin or customer about status update here
+    // realtime push to the customer who requested the service
+    this.realtime.notifyUser(service.userId, 'task-updated', { id: service.id, status });
 
     return this.formatResponse('Task status updated', service);
   }

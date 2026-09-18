@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
@@ -52,37 +52,60 @@ export class OrderService {
       postcode,
     } = createOrderDto;
 
-    const orders = [];
+    // Pass 1: validate stock for every line (reject over-ordering / invalid quantities)
+    const validated: { plant: any; qty: number; name: string }[] = [];
     for (const { plantId, quantity, name } of plants) {
-      const plant = await this.plantRepository.findOne({
-        where: { id: plantId },
-      });
-      if (!plant) {
-        throw new Error(`Plant with ID ${plantId} not found`);
+      const plant = await this.plantRepository.findOne({ where: { id: plantId } });
+      if (!plant) throw new BadRequestException(`Plant with ID ${plantId} not found`);
+      const qty = Number(quantity);
+      if (!qty || qty < 1) {
+        throw new BadRequestException(`Quantity for ${plant.name} must be at least 1.`);
       }
+      const available = Number(plant.quantity ?? 0);
+      if (qty > available) {
+        throw new BadRequestException(
+          `Only ${available} of "${plant.name}" left in stock — you asked for ${qty}.`,
+        );
+      }
+      validated.push({ plant, qty, name });
+    }
 
-      const order = this.orderRepository.create({
-        userId,
-        plantId,
-        quantity,
-        name,
-        total,
-        firstName,
-        lastName,
-        email,
-        phone,
-        address,
-        postcode,
-      });
-
-      orders.push(order);
+    // Pass 2: decrement stock + build orders
+    const orders = [];
+    for (const { plant, qty, name } of validated) {
+      plant.quantity = Number(plant.quantity ?? 0) - qty;
+      await this.plantRepository.save(plant);
+      orders.push(
+        this.orderRepository.create({
+          userId,
+          plantId: plant.id,
+          quantity: qty,
+          name,
+          total,
+          firstName,
+          lastName,
+          email,
+          phone,
+          address,
+          postcode,
+        }),
+      );
     }
 
     return await this.orderRepository.save(orders);
   }
 
   async findAll(): Promise<Order[]> {
-    return this.orderRepository.find();
+    return this.orderRepository.find({ order: { createdAt: 'DESC' } });
+  }
+
+  async getMyOrders(userId: string): Promise<Order[]> {
+    return this.orderRepository.find({ where: { userId }, order: { createdAt: 'DESC' } });
+  }
+
+  async updateStatus(id: string, status: string) {
+    await this.orderRepository.update(id, { status });
+    return this.orderRepository.findOne({ where: { id } });
   }
 
   async findOne(id: string): Promise<Order> {

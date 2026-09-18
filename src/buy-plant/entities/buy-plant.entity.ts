@@ -22,8 +22,8 @@ export class BuyPlant {
   @Column('int', { default: 0 })
   reservedQuantity: number;
 
-  @Column({ type: 'enum', enum: PlantCategory })
-  category: PlantCategory;
+  @Column({ type: 'varchar', nullable: true })
+  category: string;
 
   @Column({ nullable: true })
   image: string;

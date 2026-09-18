@@ -17,9 +17,6 @@ export class ComplainService {
   }
   async create(createComplainDto: CreateComplainDto,
     file?: Express.Multer.File,): Promise<{ message: string; data: Complain }>  {
-      if (!file) {
-        throw new InternalServerErrorException('No file uploaded');
-      }
       try {
         const newReport = this.complainRepository.create({
           userId: createComplainDto.userId,
@@ -27,7 +24,8 @@ export class ComplainService {
           phoneNumber: createComplainDto.phoneNumber,
           cnic: createComplainDto.cnic,
           address: createComplainDto.address,
-          image: file ? file.filename : null, // Handle case when no file is uploaded
+          complaintDetails: createComplainDto.complaintDetails,
+          image: file ? file.filename : null,
         });
   
         const savedReport = await this.complainRepository.save(newReport);

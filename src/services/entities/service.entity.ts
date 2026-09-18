@@ -1,6 +1,7 @@
 import { BuyPlant } from 'src/buy-plant/entities/buy-plant.entity';
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, Index } from 'typeorm';
 
+@Index(['userId'])
 @Entity()
 export class Service {
   @PrimaryGeneratedColumn('uuid')

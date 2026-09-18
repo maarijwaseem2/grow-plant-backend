@@ -1,14 +1,8 @@
 import { BuyPlant } from 'src/buy-plant/entities/buy-plant.entity';
 import { User } from 'src/users/entities/user.entity';
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  ManyToOne,
-  JoinColumn,
-  CreateDateColumn,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, CreateDateColumn, Index } from 'typeorm';
 
+@Index(['userId'])
 @Entity()
 export class Order {
   @PrimaryGeneratedColumn('uuid')
@@ -46,6 +40,9 @@ export class Order {
 
   @Column({ length: 10, nullable: true })
   postcode: string;
+
+  @Column({ default: 'Pending' })
+  status: string; // Pending -> Confirmed -> Dispatched -> Delivered
 
   @CreateDateColumn()
   createdAt: Date;

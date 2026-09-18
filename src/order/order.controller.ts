@@ -1,16 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  ParseUUIDPipe,
-  Request,
-  BadRequestException,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, ParseUUIDPipe, Request, BadRequestException, UseGuards } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -19,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Request as ExpressRequest } from 'express';
 import { JwtAuthGuard } from 'src/shared/guards/jwt.guard';
+import { AdminGuard } from 'src/shared/guards/admin.guard';
 
 interface User {
   userId: string;
@@ -59,6 +48,18 @@ export class OrderController {
   @Get()
   findAll() {
     return this.orderService.findAll(); // Fetch user-specific orders
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('mine')
+  getMine(@Request() req) {
+    return this.orderService.getMyOrders(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch(':id/status')
+  setStatus(@Param('id') id: string, @Body() body: { status: string }) {
+    return this.orderService.updateStatus(id, body.status);
   }
 
   @Get(':id')
