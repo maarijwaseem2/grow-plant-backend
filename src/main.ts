@@ -90,7 +90,7 @@ async function bootstrap() {
   // app.useGlobalGuards(new JwtAuthGuard());
 
   const port = Number(process.env.PORT) || 3001;
-  await app.listen(port);
-  console.log(`Backend running on http://localhost:${port}`);
+  await app.listen(port, '0.0.0.0'); // bind all interfaces (required by Render/hosts)
+  console.log(`Backend running on port ${port}`);
 }
 bootstrap();

@@ -24,9 +24,6 @@ export class BuyPlantService {
     createBuyPlantDto: CreateBuyPlantDto,
     file?: Express.Multer.File,
   ): Promise<{ message: string; data: BuyPlant }> {
-    if (!file) {
-      throw new InternalServerErrorException('No file uploaded');
-    }
     try {
       console.log(
         'Service - Create DTO:',
@@ -40,7 +37,13 @@ export class BuyPlantService {
         quantity: createBuyPlantDto.quantity,
         description: createBuyPlantDto.description,
         category: createBuyPlantDto.category,
-        image: file ? file.filename : null, // Handle case when no file is uploaded
+        // prefer a base64 image in the body (persists in DB); else an uploaded file name
+        image:
+          typeof createBuyPlantDto.image === 'string' && createBuyPlantDto.image
+            ? createBuyPlantDto.image
+            : file
+              ? file.filename
+              : null,
       });
 
       const savedPlant = await this.plantRepository.save(newPlant);
@@ -113,8 +116,10 @@ export class BuyPlantService {
       plant.description = updateBuyPlantDto.description;
       plant.category = updateBuyPlantDto.category;
 
-      // If a file is provided, update the image
-      if (file) {
+      // base64 image in the body wins; else an uploaded file
+      if (typeof updateBuyPlantDto.image === 'string' && updateBuyPlantDto.image) {
+        plant.image = updateBuyPlantDto.image;
+      } else if (file) {
         plant.image = file.filename;
       }
 

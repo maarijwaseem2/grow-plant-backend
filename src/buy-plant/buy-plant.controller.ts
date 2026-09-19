@@ -53,19 +53,8 @@ export class BuyPlantController {
         throw new BadRequestException('Name is required');
       }
 
-      // Construct the public URL for the image
-      const imageUrl = file
-        ? `http://localhost:3000/uploads/${file.filename}` // Replace with your domain in production
-        : null;
-
-      // Prepare the plant data with image URL
-      const plantData = {
-        ...createBuyPlantDto,
-        image: imageUrl, // Add the image URL
-      };
-
-      // Save the plant data to the database
-      const result = await this.buyPlantService.create(plantData, file);
+      // Save the plant data (image comes as a base64 string in the body, or a file)
+      const result = await this.buyPlantService.create(createBuyPlantDto, file);
 
       // Return the saved data with success response
       return {
